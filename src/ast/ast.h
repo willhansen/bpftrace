@@ -1756,6 +1756,8 @@ public:
 
   std::string name() const;
 
+  Record* components_record( ASTContext &ctx, const Location &loc);
+
   AttachPoint *create_expansion_copy(ASTContext &ctx,
                                      const std::string &match) const;
 

@@ -337,6 +337,45 @@ std::string AttachPoint::name() const
   return n;
 }
 
+
+Record* AttachPoint::components_record( ASTContext &ctx, const Location &loc) {
+  std::vector<std::pair<std::string, Expression>> components;
+
+  auto add_field = [&]<typename T>(std::string name, auto field) {
+    components.push_back(std::make_pair(name, Expression(ctx.make_node<T>(loc, field))));
+  };
+
+  add_field.template operator()<String>("type", provider);
+  if (user_provided_name.has_value())
+    add_field.template operator()<String>("name", user_provided_name.value());
+  if (!target.empty())
+    add_field.template operator()<String>("target", target);
+  if (!lang.empty())
+    add_field.template operator()<String>("lang", lang);
+  if (!ns.empty())
+    add_field.template operator()<String>("namespace", ns);
+  if (bpf_prog_id != 0)
+    add_field.template operator()<Integer>("bpf_prog_id", bpf_prog_id);
+  if (!func.empty()) {
+    add_field.template operator()<String>("func", func);
+    if (func_offset != 0)
+      add_field.template operator()<Integer>("offset", func_offset);
+  }
+  if (address != 0)
+    add_field.template operator()<Integer>("address", address);
+  if (freq != 0)
+    add_field.template operator()<Integer>("freq", freq);
+  if (len != 0)
+    add_field.template operator()<Integer>("len", len);
+  if (!mode.empty())
+    add_field.template operator()<String>("mode", mode);
+
+  return make_record(ctx,
+                    loc,
+                    std::move(components));
+
+}
+
 std::optional<std::string> Probe::attachpoint_name() const
 {
   if (attach_points.size() != 1) {

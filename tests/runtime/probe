@@ -711,3 +711,4 @@ TIMEOUT 1
 NAME uprobe_zip_archive
 RUN {{BPFTRACE}} -e 'uprobe:"./testprogs/archive.zip!/true":main {} begin { exit() }'
 EXPECT_REGEX Attached 2 probes
+

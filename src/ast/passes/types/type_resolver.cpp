@@ -917,6 +917,95 @@ void TypeRuleCollector::visit(Builtin &builtin)
                              : AddrSpace::kernel);
       builtin_type.MarkCtxAccess();
     }
+  } else if (builtin.ident == "__builtin_probe_components") {
+
+    auto *probe = get_probe(builtin, builtin.ident);
+    if (probe == nullptr)
+      return;
+
+    auto *ap = probe->attach_points.front();
+    ProbeType pt = probetype(ap->provider);
+
+    std::vector<std::string_view> field_names;
+    std::vector<SizedType> field_types;
+
+    // TODO: is this a valid max?
+    constexpr size_t MAX_PROBE_STR = 64;
+
+    auto add_field = [&](std::string name, auto type) {
+      field_names.push_back(name);
+      field_types.push_back(type);
+    };
+
+    add_field("type", CreateString(MAX_PROBE_STR));
+    add_field("name", CreateString(MAX_PROBE_STR));
+    switch (pt) {
+      case ProbeType::kprobe:
+      case ProbeType::kretprobe:
+      case ProbeType::fentry:
+      case ProbeType::fexit: {
+        add_field("func", CreateString(MAX_PROBE_STR));
+        add_field("module", CreateString(MAX_PROBE_STR));
+        add_field("offset", CreateUInt64());
+        break;
+      }
+      case ProbeType::uprobe:
+      case ProbeType::uretprobe: {
+        add_field("func", CreateString(MAX_PROBE_STR));
+        add_field("binary", CreateString(MAX_PROBE_STR));
+        add_field("offset", CreateUInt64());
+        break;
+      }
+      case ProbeType::tracepoint:
+      case ProbeType::rawtracepoint: {
+        add_field("func", CreateString(MAX_PROBE_STR));
+        add_field("module", CreateString(MAX_PROBE_STR));
+        break;
+      }
+      case ProbeType::profile:
+      case ProbeType::interval: {
+        add_field("unit", CreateString(MAX_PROBE_STR));
+        add_field("value", CreateUInt64());
+        break;
+      }
+      case ProbeType::hardware:
+      case ProbeType::software: {
+        add_field("event", CreateString(MAX_PROBE_STR));
+        add_field("count", CreateUInt64());
+        break;
+      }
+      case ProbeType::iter: {
+        add_field("task_type", CreateString(MAX_PROBE_STR));
+        add_field("pin", CreateString(MAX_PROBE_STR));
+        break;
+      }
+      case ProbeType::special: {
+        if (ap->provider == "self") {
+          add_field("target", CreateString(MAX_PROBE_STR));
+          add_field("signal", CreateString(MAX_PROBE_STR));
+        }
+        break;
+      }
+      case ProbeType::usdt: {
+        add_field("path", CreateString(MAX_PROBE_STR));
+        add_field("namespace", CreateString(MAX_PROBE_STR));
+        add_field("name", CreateString(MAX_PROBE_STR));
+        break;
+      }
+      case ProbeType::watchpoint: {
+        add_field("address", CreateUInt64());
+        add_field("length", CreateUInt64());
+        add_field("mode", CreateString(MAX_PROBE_STR));
+        break;
+      }
+      default:
+        LOG(BUG) << "Unknown probe type: '" << pt << "'";
+        break;
+    }
+
+    builtin_type =  CreateRecord(Struct::CreateRecord(field_types, field_names));
+
+
   } else {
     LOG(BUG) << "Unknown builtin variable: '" << builtin.ident << "'";
   }

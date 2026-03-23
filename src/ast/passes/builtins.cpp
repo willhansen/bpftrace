@@ -104,6 +104,12 @@ std::optional<Expression> Builtins::check(const std::string &ident, Node &node)
       return ast_.make_node<Integer>(
           node.loc, util::file_ino(probe->attach_points.front()->target));
     }
+  } else if (ident == "__builtin_probe_components") {
+    if (check_probe()) {
+      auto *ap = probe->attach_points.front();
+      return ap->components_record(ast_, node.loc);
+    }
+
   }
 
   return std::nullopt;

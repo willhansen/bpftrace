@@ -1137,6 +1137,11 @@ macro probe()
   __builtin_probe
 }
 
+macro probe_components()
+{
+  __builtin_probe_components
+}
+
 // :variant string probetype()
 // Name of the probe type.
 // Note: `begin` and `end` probes are of type `special`.

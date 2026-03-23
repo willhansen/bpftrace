@@ -1,0 +1,146 @@
+NAME begin_probe_components_builtin
+PROG begin { printf("%s", probe_components.type); exit();}
+EXPECT begin
+
+NAME end_probe_components_builtin
+PROG end { printf("%s", probe_components.type); exit();}
+EXPECT end
+
+NAME test_probe_components_builtin
+PROG test:a { printf("%s %s", probe_components.type, probe_components.name); exit();}
+EXPECT test a
+
+NAME bench_probe_components_builtin
+PROG bench:b { printf("%s %s", probe_components.type, probe); exit();}
+EXPECT bench b
+
+NAME self_probe_components_builtin
+RUN {{BPFTRACE}} -e 'self:signal:SIGUSR1 { printf("%s %s %s", probe_components.type, probe_components.target, probe_components.signal); } self:signal:SIGUSR1 { printf(" second\n"); exit(); }'
+AFTER kill -s USR1 $(pidof bpftrace)
+EXPECT_REGEX self signal SIGUSR1
+
+NAME hardware_probe_components_builtin
+REQUIRES ls /sys/devices/cpu/events/cache-misses
+PROG hardware:cache-misses:10 { printf("%s %s %d", probe_components.type, probe_components.event, probe_components.count); exit();}
+EXPECT hardware cache-misses 10
+
+NAME interval_probe_components_builtin
+PROG interval:ms:1 { printf("%s %s %d", probe_components.type, probe_components.unit, probe_components.value); exit();}
+EXPECT interval ms 1
+
+NAME iter_probe_components_builtin
+PROG iter:task { printf("%s %s", probe_components.type, probe_components.task_type); exit();}
+EXPECT iter task
+REQUIRES_FEATURE iter
+
+NAME iter_file_probe_components_builtin
+PROG iter:task_file { printf("%s %s", probe_components.type, probe_components.task_type); exit();}
+EXPECT iter task_file
+REQUIRES_FEATURE iter
+
+NAME iter_vma_probe_components_builtin
+PROG iter:task_vma { printf("%s %s", probe_components.type, probe_components.task_type); exit();}
+EXPECT iter task_vma
+REQUIRES_FEATURE iter
+
+NAME pinned_iter_probe_components_builtin
+PROG iter:task:a { printf("%s %s %s", probe_components.type, probe_components.task_type, probe_components.pin); exit();}
+EXPECT iter task a
+REQUIRES_FEATURE iter
+
+NAME pinned_iter_file_probe_components_builtin
+PROG iter:task_file:b { printf("%s %s %s", probe_components.type, probe_components.task_type, probe_components.pin); exit();}
+EXPECT iter task_file b
+REQUIRES_FEATURE iter
+
+NAME pinned_iter_vma_probe_components_builtin
+PROG iter:task_vma:c { printf("%s %s %s", probe_components.type, probe_components.task_type, probe_components.pin); exit();}
+EXPECT iter task_vma c
+REQUIRES_FEATURE iter
+
+NAME fentry_probe_components_builtin
+PROG fentry:vfs_read { printf("%s %s", probe_components.type, probe_components.func); exit(); }
+EXPECT fentry vfs_read
+AFTER ./testprogs/syscall read
+
+NAME fentry_module_probe_components_builtin
+PROG fentry:vmlinux:vfs_read { printf("%s %s %s", probe_components.type, probe_components.module, probe_components.func); exit(); }
+EXPECT fentry vmlinux vfs_read
+AFTER ./testprogs/syscall read
+
+NAME fexit_probe_components_builtin
+PROG fexit:vfs_read { printf("%s %s", probe_components.type, probe_components.func); exit(); }
+EXPECT fexit vfs_read
+AFTER ./testprogs/syscall read
+
+NAME fexit_module_probe_components_builtin
+PROG fexit:vmlinux:vfs_read { printf("%s %s %s", probe_components.type, probe_components.module, probe_components.func); exit(); }
+EXPECT fexit vmlinux vfs_read
+AFTER ./testprogs/syscall read
+
+NAME kprobe_probe_components_builtin
+PROG kprobe:vfs_read { printf("%s %s", probe_components.type, probe_components.func); exit(); }
+EXPECT kprobe vfs_read
+AFTER ./testprogs/syscall read
+
+NAME kprobe_offset_probe_components_builtin
+PROG kprobe:vfs_read+0 { printf("%s %s %d", probe_components.type, probe_components.func probe_components.offset); exit(); }
+EXPECT kprobe vfs_read 0
+AFTER ./testprogs/syscall read
+
+NAME kprobe_module_probe_components_builtin
+PROG kprobe:vmlinux:vfs_read { printf("%s %s %s", probe_components.type, probe_components.module, probe_components.func); exit(); }
+EXPECT kprobe vmlinux vfs_read
+AFTER ./testprogs/syscall read
+
+NAME kretprobe_module_offset_probe_components_builtin
+PROG kretprobe:vmlinux:vfs_read+0 { printf("%s %s %s %d", probe_components.type, probe_components.module, probe_components.func, probe_components.offset); exit(); }
+EXPECT kretprobe vmlinux vfs_read 0
+AFTER ./testprogs/syscall read
+
+NAME profile_probe_components_builtin
+PROG profile:hz:599 { printf("%s %s %d", probe_components.type, probe_components.unit, probe_components.value); exit();}
+EXPECT profile hz 599
+
+NAME rawtracepoint_probe_components_builtin
+PROG rawtracepoint:syscalls:sys_exit_nanosleep { printf("%s %s %d", probe_components.type, probe_components.module, probe_components.func); exit();}
+EXPECT rawtracepoint syscalls sys_exit_nanosleep
+AFTER ./testprogs/syscall nanosleep 1e8
+
+NAME software_probe_components_builtin
+PROG software:cpu-clock:100000 { printf("%s %s %d", probe_components.type, probe_components.event, probe_components.count); exit();}
+EXPECT software cpu-clock 100000
+
+NAME software_alias_probe_components_builtin
+PROG software:cpu:100000 { printf("%s %s %d", probe_components.type, probe_components.event, probe_components.count); exit();}
+EXPECT software cpu 100000
+
+NAME tracepoint_probe_components_builtin
+PROG tracepoint:syscalls:sys_exit_nanosleep { printf("%s %s %s", probe_components.type, probe_components.module, probe_components.func); exit();}
+EXPECT tracepoint syscalls sys_exit_nanosleep
+AFTER ./testprogs/syscall nanosleep 1e8
+
+NAME uprobe_offset_probe_components_builtin
+PROG uprobe:/bin/bash:echo_builtin+0 { printf("%s %s %s %d", probe_components.type, probe_components.binary, probe_components.func, probe_components.offset); exit();}
+EXPECT_REGEX uprobe /bin/bash echo_builtin 0
+AFTER /bin/bash -c "echo lala"
+
+NAME uretprobe_offset_probe_components_builtin
+PROG uretprobe:/bin/bash:echo_builtin { printf("%s %s %s", probe_components.type, probe_components.binary, probe_components.func); exit();}
+EXPECT_REGEX uretprobe /bin/bash echo_builtin
+AFTER /bin/bash -c "echo lala"
+
+NAME usdt_binary_probe_components_builtin
+PROG usdt:./testprogs/usdt_test:tracetest:testprobe { printf("%s %s %s %s", probe_components.type, probe_components.path, probe_components.namespace, probe_components.name); exit();}
+EXPECT usdt ./testprogs/usdt_test tracetest testprobe
+BEFORE ./testprogs/usdt_test
+
+NAME usdt_library_probe_components_builtin
+RUN {{BPFTRACE}} -e 'usdt:./testlibs/libusdt_tp.so:tracetestlib:lib_probe_1 { printf("%s %s %s %s", probe_components.type, probe_components.path, probe_components.namespace, probe_components.name); exit();}' -p $(pidof usdt_lib)
+EXPECT usdt ./testlibs/libusdt_tp.so tracetestlib lib_probe_1
+BEFORE ./testprogs/usdt_lib
+
+NAME watchpoint_probe_components_builtin
+RUN {{BPFTRACE}} -e 'watchpoint:0x10000000:1:x { printf("%s %x %d %s", probe_components.type, probe_components.address, probe_components.length, probe_components.mode); exit();}' -c ./testprogs/watchpoint_exec
+EXPECT watchpoint 0x10000000 1 x
+ARCH aarch64|x86_64
